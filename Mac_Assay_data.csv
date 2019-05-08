@@ -1,0 +1,13 @@
+Strain,Plate_Count_1,Plate_Count_2 ,Dilution_Factor
+LVS,25,27,0.01
+LVS,42,42,0.01
+LVS,15,34,0.01
+dPigR,14,31,1
+dPigR,46,25,1
+dPigR,7,22,1
+dPmrA,46,52,1
+dPmrA,97,112,1
+dPmrA,22,14,0.1
+dPmrA_BD,23,23,1
+dPmrA_BD,31,26,1
+dPmrA_BD,15,10,1

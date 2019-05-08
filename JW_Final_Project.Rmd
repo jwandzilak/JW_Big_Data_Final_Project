@@ -1,0 +1,81 @@
+---
+title: "Optimizing the Macrophage Assay"
+author: "Jamie Wandzilak"
+date: "May 8, 2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(tidyverse)
+Mac_Assay_data <- read_csv("Mac_Assay_data.csv")
+
+```
+
+
+
+```{r, echo=FALSE}
+avg_plate_count <- rowMeans(subset(Mac_Assay_data, select = c(Plate_Count_1,Plate_Count_2)))
+
+data_with_avg <- cbind(Mac_Assay_data,avg_plate_count)
+
+
+data_with_avg$CFU_well <-cbind((data_with_avg$avg_plate_count)/(0.01*(data_with_avg$Dilution_Factor)*0.2))
+
+grouped_strains <- data_with_avg %>% group_by(Strain) %>%
+  summarise(avg_CFU_well = mean(CFU_well)) 
+
+
+st_dev_strains <- data_with_avg  %>% group_by(Strain) %>%
+  summarise(st_dev = sd(CFU_well))
+
+grouped_st_dev <- mutate(grouped_strains,st_dev_strains$st_dev)
+
+
+```
+
+## Data Analysis 
+
+The macrophage assay is a major tool that is used when studying virulence of the bacterium *Francisella tularensis*. Here I am analyzing the differences between using growth media from different suppliers to observe any variability in the assay.
+
+The assay is based on the bacteria's ability to replicate within macrophage cells. Different strains of *F. tularensis* are compared against the wildtype strain (LVS) to observe how different mutations will affect the bacteria's ability to replicate inside macrophage. 
+
+Each strain starts at 100 cells/mL and is given 24 hours to enter and replicate inside the macrophage. The final data presented here is from the 24 hour timepoint.   
+
+The strains dPmrA and dPigR (both deletion strains of essential transcription factors) should act as negative controls and not be able to survive inside macrophage. This assay was conducted with the dPmrA strain grown on media from two different suppliers to look at assay variability. These can be distinguished by the PmrA strain, which was grown in the lab's stock media made by Alpha Biosciences, and by PmrA_BD, which is the PmrA strain grown in media made by BD.    
+
+
+
+## Figure 1
+Comparison of average CFU per well for each strain after 24 hours with the y-axis in log form. 
+
+
+
+```{r, echo=FALSE}
+ggplot(grouped_st_dev, aes(x = Strain, y = avg_CFU_well)) + 
+  geom_point() + geom_errorbar(aes(ymin = avg_CFU_well - st_dev_strains$st_dev, ymax =      avg_CFU_well + st_dev_strains$st_dev)) +
+  scale_y_log10() 
+t_test_dPigR <- t.test(filter(data_with_avg,Strain == 'LVS')$CFU_well,filter(data_with_avg, Strain == 'dPigR')$CFU_well)$p.value
+  
+t_test_dPmrA <- t.test(filter(data_with_avg,Strain == 'LVS')$CFU_well,filter(data_with_avg, Strain == 'dPmrA')$CFU_well)$p.value  
+
+t_test_dPmrA_BD <- t.test(filter(data_with_avg,Strain == 'LVS')$CFU_well,filter(data_with_avg, Strain == 'dPmrA_BD')$CFU_well)$p.value  
+
+comparing_media <- t.test(filter(data_with_avg,Strain == 'dPmrA')$CFU_well,filter(data_with_avg, Strain == 'dPmrA_BD')$CFU_well)$p.value
+
+
+
+```
+
+##Comparison of growth media 
+
+The results of this assay do show a difference between growing the dPmrA strain on the growth medium from the two suppliers. When comparing the ability of the different strains to replicate in macrophage we can compare the average CFU/mL of each deletion strain to the wildtype strain (LVS) using a t-test to determine statistical significance. In this comparison all of the deletion strains did show a statistically significant difference from the wildtype strain. This can be supported by p-values of `r t_test_dPigR` for dPigR, `r t_test_dPmrA` for dPmrA and `r t_test_dPmrA_BD` for the dPmrA strain that was grown in the BD media. The comparison between the dPmrA strain grown on the Alpha Biosciences media and the dPmrA strain grown on the BD media was not statistically significant with a p-value of `r comparing_media`. 
+
+
+
+
+
